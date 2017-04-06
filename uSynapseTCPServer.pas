@@ -225,6 +225,7 @@ end;
 
 constructor TSynapseTCPServer.Create(APort:string;AUseSSL:boolean;AWorkerCount:integer;AMaxClients:integer);
 begin
+  FActive := true;
   FThreadClass := TSynapseTCPServerThread;
 
   { This is the maximum number of worker threads to use for processing
@@ -310,7 +311,6 @@ begin
       if LastError <> 0 then
         terminate;
 
-      FActive := true;
       repeat
         if terminated then break;
         if canread(1000) then

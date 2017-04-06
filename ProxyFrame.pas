@@ -40,13 +40,7 @@ implementation
 
 procedure TframeProxy.actGoExecute(Sender: TObject);
 begin
-  if not FProxy.Active then
-  begin
-    FProxy.SSLPort := StrToInt(incomingPort.Text);
-    FProxy.Host := outgoingHost.Text;
-    FProxy.Port := StrToInt(outgoingPort.Text);
-  end;
-  FProxy.Active := not FProxy.Active;
+  Active := not Active;
 end;
 
 procedure TframeProxy.actGoUpdate(Sender: TObject);
@@ -75,6 +69,12 @@ end;
 
 procedure TframeProxy.SetActive(const Value: Boolean);
 begin
+  if Value then
+  begin
+    FProxy.SSLPort := StrToInt(incomingPort.Text);
+    FProxy.Host := outgoingHost.Text;
+    FProxy.Port := StrToInt(outgoingPort.Text);
+  end;
   FProxy.Active := Value;
 end;
 

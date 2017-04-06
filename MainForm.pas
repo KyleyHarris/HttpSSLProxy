@@ -12,6 +12,8 @@ type
     FProxyFrame: TframeProxy;
   protected
     procedure SetParent(AParent: TWinControl); override;
+    procedure Notification(AComponent: TComponent;
+      Operation: TOperation); override;
 
   public
     procedure AfterConstruction; override;
@@ -238,11 +240,22 @@ begin
   FProxyFrame.Name := sName;
 end;
 
+procedure TProxyTabSheet.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+  inherited;
+  if Operation = opRemove then
+    if AComponent = FProxyFrame then
+      FProxyFrame := nil;
+end;
+
 procedure TProxyTabSheet.SetParent(AParent: TWinControl);
 begin
   inherited;
-  FProxyFrame.Parent := self;
-  FProxyFrame.Align := alClient;
+  if Assigned(FProxyFrame) then
+  begin
+    FProxyFrame.Parent := self;
+    FProxyFrame.Align := alClient;
+  end;
 end;
 
 end.
