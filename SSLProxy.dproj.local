@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2017/04/05 21:36:30.671.pas,C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\Unit2.pas=C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\SSLProxyConn.pas</Transaction>
+    <Transaction>2017/04/05 21:36:35.107.pas,C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\Unit1.pas=C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\MainForm.pas</Transaction>
+    <Transaction>2017/04/05 21:36:35.107.dfm,C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\Unit1.dfm=C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\MainForm.dfm</Transaction>
+    <Transaction>2017/04/05 21:36:38.252.dproj,C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\Project1.dproj=C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\SSLProxy.dproj</Transaction>
+    <Transaction>2017/04/05 22:04:36.558.pas,C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\Unit1.pas=C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\ProxyFrame.pas</Transaction>
+    <Transaction>2017/04/05 22:04:36.558.dfm,C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\Unit1.dfm=C:\Documents and Settings\Developer\My Documents\RAD Studio\Projects\SSLProxy\ProxyFrame.dfm</Transaction>
+  </Transactions>
+</BorlandProject>
