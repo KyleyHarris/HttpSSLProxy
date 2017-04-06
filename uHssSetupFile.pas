@@ -48,14 +48,14 @@ begin
 
   SSL_CERT_ROOT := Getparameter('SSLCERTROOT');
   if SSL_CERT_ROOT <> '' then
-    if pos('\',SSL_CERT_ROOT) = 0 then
+    if (pos('\',SSL_CERT_ROOT) = 0) and (SSL_CERT_ROOT <> '') then
       SSL_CERT_ROOT := AppPath + SSL_CERT_ROOT;
 
   SSL_CERT := Getparameter('SSLCERT');
-  if pos('\',SSL_CERT) = 0 then
+  if (pos('\',SSL_CERT) = 0) and (SSL_CERT <> '') then
     SSL_CERT := AppPath + SSL_CERT;
   SSL_Key := Getparameter('SSLKEY');
-  if pos('\',SSL_KEY) = 0 then
+  if (pos('\',SSL_KEY) = 0) and (SSL_KEY <> '') then
     SSL_KEY := AppPath + SSL_KEY;
 
 end;

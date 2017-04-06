@@ -1,11 +1,11 @@
 object frameProxy: TframeProxy
   Left = 0
   Top = 0
-  Width = 692
+  Width = 985
   Height = 531
   TabOrder = 0
   DesignSize = (
-    692
+    985
     531)
   object Label1: TLabel
     Left = 16
@@ -66,13 +66,33 @@ object frameProxy: TframeProxy
   end
   object Memo1: TMemo
     Left = 16
-    Top = 104
-    Width = 657
-    Height = 409
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Top = 111
+    Width = 553
+    Height = 201
+    Anchors = [akLeft, akTop, akRight]
     Lines.Strings = (
       'Memo1')
     TabOrder = 5
+  end
+  object ListBox1: TListBox
+    Left = 575
+    Top = 3
+    Width = 407
+    Height = 525
+    Anchors = [akRight, akBottom]
+    ItemHeight = 13
+    TabOrder = 6
+    OnClick = ListBox1Click
+  end
+  object Memo2: TMemo
+    Left = 16
+    Top = 318
+    Width = 553
+    Height = 202
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Lines.Strings = (
+      'Memo1')
+    TabOrder = 7
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer

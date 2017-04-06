@@ -19,9 +19,12 @@ type
     Label2: TLabel;
     Actions: TActionList;
     actGo: TAction;
+    ListBox1: TListBox;
+    Memo2: TMemo;
     procedure Timer1Timer(Sender: TObject);
     procedure actGoUpdate(Sender: TObject);
     procedure actGoExecute(Sender: TObject);
+    procedure ListBox1Click(Sender: TObject);
   private
     FProxy: TSSLProxyConn;
     function GetActive: Boolean;
@@ -34,6 +37,8 @@ type
 
 implementation
 
+uses
+  blcksock;
 {$R *.dfm}
 
 { TFrame1 }
@@ -67,6 +72,18 @@ begin
   result := FProxy.Active;
 end;
 
+procedure TframeProxy.ListBox1Click(Sender: TObject);
+var
+  sHeaderIn, sHeaderOut, sBodyIn, sBodyOut:string;
+begin
+  if ListBox1.ItemIndex <> -1 then
+  begin
+    FProxy.Packet(ListBox1.ItemIndex,sHeaderIn, sHeaderOut, sBodyIn, sBodyOut);
+    Memo1.Lines.Text := sHeaderIn + CRLF + sBodyIn;
+    Memo2.Lines.Text := sHeaderOut + CRLF + sBodyOut;
+  end;
+end;
+
 procedure TframeProxy.SetActive(const Value: Boolean);
 begin
   if Value then
@@ -79,8 +96,13 @@ begin
 end;
 
 procedure TframeProxy.Timer1Timer(Sender: TObject);
+var
+  i: Integer;
 begin
-  Memo1.Text := FProxy.Log;
+  i := ListBox1.ItemIndex;
+  ListBox1.Items.Text := FProxy.Log;
+  ListBox1.ItemIndex := i;
+  ListBox1Click(ListBox1);
 end;
 
 end.

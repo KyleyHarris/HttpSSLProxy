@@ -48,40 +48,15 @@ type
    csDisconnecting,
    csDisconnected);
 
-  {
-
-  TSynapseTCPServer is a lightweight, but strong TCPServer implementation that
-  supports the following Key Features:
-
-  1/ One Thread Per Connection Socket Processing, to simplify coding of apps
-     that have low volume clients and want to sit and wait on a socket, OR
-  2/ Round-Robin sharing of threads betweeen client sockets. This is a much more
-     efficient method of processing a high volume of client sockets. In this
-     method you have a small number of threads, say 10 (configurable), handling
-     a high number of clients, say 50. Using this method requires that the socket
-     handler does not sit and wait for data. This would cause other clients to
-     be blocked. Using this method it is ideal to keep 2 data queues against the
-     client socket and perform quick read/writes to an In queue and Out Queue.
-     This supports good load-balancing features. You would then have a seperate
-     work thread that can read the "in" queue and process it and place information
-     on the "out" queue. See TSynapseBalanceQueue.
-  3/ Max Client Connections. This allows you to set a maximum number of client
-     sockets allowed to restrict resource use on the server.
-  }
-
   TSynapseTCPServerThread = class;
   TSynapseTCPServerThreadClass = class of TSynapseTCPServerThread;
-
-
 
   TSynapseTCPServer = class(TThread)
   private
     FPeakConnections:integer;
     FPort:string;
     FWorkThreads:TThreadList;
-    FWorkerCount:integer;
     FClientSockets:TThreadList;
-    FClientWorkQueue:TList; //Only ever access this using ClientSocketsLock
     FMaxClients:integer;
     FOnDisconnect: TSynapseServerThreadEvent;
     FOnConnect: TSynapseServerThreadEvent;
@@ -103,7 +78,7 @@ type
   public
     FSock:TTCPBlockSocket;
     function ClientCount:integer;
-    constructor Create(APort:string; AUseSSL:boolean=false;AWorkerCount:integer=-1;AMaxClients:integer=-1);
+    constructor Create(APort:string; AUseSSL:boolean=false; AMaxClients:integer=-1);
     destructor Destroy; override;
 
     procedure BeforeExecute;virtual;
@@ -170,11 +145,9 @@ type
     procedure BeforeExecute;virtual;
     procedure AfterExecute;virtual;
     procedure Execute; override;
-    function Pop:TSynapseTCPServerPeer;
     procedure Disconnect(var APeer:TSynapseTCPServerPeer);
-    procedure Push(APeer:TSynapseTCPServerPeer);
     procedure Process(var APeer:TSynapseTCPServerPeer);
-
+    property Peer: TSynapseTCPServerPeer read FPeer;
   public
     constructor Create(AOwner:TSynapseTCPServer;APeer:TSynapseTCPServerPeer=nil);
     destructor Destroy;override;
@@ -223,16 +196,11 @@ begin
   end;
 end;
 
-constructor TSynapseTCPServer.Create(APort:string;AUseSSL:boolean;AWorkerCount:integer;AMaxClients:integer);
+constructor TSynapseTCPServer.Create(APort:string;AUseSSL:boolean; AMaxClients:integer);
 begin
   FActive := true;
   FThreadClass := TSynapseTCPServerThread;
 
-  { This is the maximum number of worker threads to use for processing
-    client sockets. -1 will allocate 1 thread per socket }
-  FWorkerCount := -1;// AWorkerCount;
-
-  FClientWorkQueue := TList.Create;
   { This will only allow (x) concurrent connections to the server. leave -1 for
   unlimited }
   FMaxClients := AMaxClients;
@@ -281,7 +249,6 @@ begin
   finally
     fSock.free;
   end;
-  FreeAndNil(FClientWorkQueue);
   FreeAndNil(FWorkThreads);
   FreeAndNil(FClientSockets);
   inherited;
@@ -370,8 +337,6 @@ begin
                       end else
                       if FInitialized and (MinutesBetween(now,FLastAccessTime) > 3) then
                       begin
-  //                      LoggingIP := Sock.GetRemoteSinIP;
-//                        HssLog('Flush OLD SOCKET '+SocketLocation,hltException);
                         LoggingIP := '';
                         FConnectState := csDisconnecting;
                         Sock.CloseSocket;
@@ -462,21 +427,7 @@ begin
     Threads := FOwner.FWorkThreads.LockList;
     try
 
-      { Allocate a single worker thread for each socket, maintaining indy
-      style, supporting threadvar!yuck! etc. }
-      if FOwner.FWorkerCount = -1 then
-      begin
-        AOwner.ThreadClass.Create(FOwner,self)
-      end else
-      { Dynamically Grow the worker threads for processing TCP information.
-        Be warned that if you are not using the above method, do not write any
-        TCP code that sits around with big timeouts. This will result in blocking
-        other client sockets.
-       }
-      begin
-        if (Socks.Count + 1 > Threads.Count) and (Threads.Count < FOwner.FWorkerCount ) then
-          AOwner.ThreadClass.Create(FOwner);
-      end;
+      AOwner.ThreadClass.Create(FOwner,self)
 
     finally
       FOwner.FWorkThreads.UnlockList;
@@ -484,8 +435,6 @@ begin
 
     Socks.Add(self);
     AOwner.FPeakConnections := Max(AOwner.FPeakConnections,Socks.Count);
-    if FOwner.FWorkerCount <> -1 then
-      FOwner.FClientWorkQueue.Add(self);
   finally
     FOwner.FClientSockets.UnlockList;
   end;
@@ -559,87 +508,53 @@ begin
 end;
 
 procedure TSynapseTCPServerThread.Execute;
-
-var
-  Peer:TSynapseTCPServerPeer;
 begin
   SetName;
-    {$IFDEF INTEGRALWORKTHREAD}
-    if assigned(DBaccess) then
-      DBAccess.Lock(True);
-    {$ENDIF}
-
-
-  try
-
-    BeforeExecute;
+  BeforeExecute;
   try
     while not Terminated do
     try
-      Sleep(20);
-      Peer := nil;
-      Peer := Pop;
-
-
-      if Assigned(peer) then
+      Sleep(1);
+      if Assigned(Peer) then
       begin
         try
-
-            Process(Peer) ;
-
+          Process(FPeer) ;
         finally
           if Assigned(Peer) then
           begin
-            if Peer.ConnectState <> csDisconnected then
-            begin
-              Push(Peer);
-            end else
-            begin
-              if Peer = FPeer then
-                Terminate else
-              FreeAndNil(Peer);
-            end;
+            if Peer.ConnectState = csDisconnected then
+                Terminate;
+            
           end else terminate;
         end
       end else terminate; //    Sleep(1);
-
-
     except
-
-
       on e:ESynapseError do
       begin
-
         case e.ErrorCode of
           10091:
           begin
             if Peer.Sock.SSL.LastError <> 0 then
             begin
               OutputDebugString(pchar('EXECUTE SSLERROR '+IntToStr(Peer.Sock.SSL.LastError )+' '+Peer.Sock.SSL.LastErrorDesc ));
-              Disconnect(Peer);
+              Disconnect(FPeer);
             end;
           end;
           else
           begin
            OutputDebugString(pchar(e.ClassName+' '+e.Message));
-           Disconnect(Peer);
+           Disconnect(FPeer);
           end;
         end;
       end;
       on e:exception do
       begin
-       Disconnect(Peer);
+       Disconnect(FPeer);
        HssLogExcept(e,'Synapse Server Thread Main Loop');
        terminate;
       end;
     end;
 
-    finally
-      {$IFDEF INTEGRALWORKTHREAD}
-    if assigned(DBaccess) then
-       DBAccess.Unlock;
-      {$ENDIF}
-    end;
   finally
     AFterexecute;
   end;
@@ -655,30 +570,12 @@ begin
   try
     Socks := FOwner.FClientSockets.LockList ;
     try
-
       Socks.Remove(self);
-      FOwner.FClientWorkQueue.Remove(self);
-
-      (*
-      Threads := FOwner.FWorkThreads.LockList;
-      try
-        if (FOwner.FWorkerCount <> -1) and (Socks.Count < Threads.Count) then
-        for i := 0 to Threads.Count -1 do
-          with TSynapseTCPServerThread(Threads[i]) do
-            if not Terminated then
-            begin
-              Terminate;
-              Break;
-            end;
-      finally
-        FOwner.FWorkThreads.UnlockList;
-      end;
-        *)
     finally
       FOwner.FClientSockets.UnlockList;
     end;
     if FFreeExtraData then
-     FreeAndNil(FExtraData);
+      FreeAndNil(FExtraData);
 
     inherited;
   finally
@@ -686,39 +583,8 @@ begin
   end;
 end;
 
-function TSynapseTCPServerThread.Pop: TSynapseTCPServerPeer;
-var
-  c:integer;
-begin
-  if FPeer <> nil then
-  begin
-    { dedicated worker }
-    result := FPeer;
-  end else
-  begin
-    { Grab the next available socket to process from the shared queue. }
-    result := nil;
-    with FOwner.FClientSockets.LockList do
-    try
-      c := Count;
-      if c > 0 then
-
-      if FOwner.FClientWorkQueue.Count > 0 then
-      begin
-        result := TSynapseTCPServerPeer(FOwner.FClientWorkQueue.Items[0]);
-        FOwner.FClientWorkQueue.Delete(0);
-      end;
-    finally
-      FOwner.FClientSockets.UnlockList;
-    end;
-  end;
-
-end;
-
 procedure TSynapseTCPServerThread.Process(var APeer: TSynapseTCPServerPeer);
 begin
-
-
   if Assigned(APeer) then
   try
     Inc(APeer.Pass);
@@ -757,10 +623,6 @@ begin
       end;
       csDisconnected: ;
     end;
-
-
-
-
   except
     on e:ESynapseError do
     begin
@@ -792,26 +654,7 @@ begin
     end;
   end;
 end;
-
-procedure TSynapseTCPServerThread.Push(APeer: TSynapseTCPServerPeer);
-begin
-
-  { Put the socket back into the shared processing queue if this is not
-  a dedicated work thread. }
-  if FPeer = nil then
-  begin
-    with FOwner.FClientSockets.LockList do
-    try
-      FOwner.FClientWorkQueue.Add(APeer);
-    finally
-      FOwner.FClientSockets.Unlocklist
-    end;
-  end;
-
-end;
-
-
-
+    
 function TSynapseTCPServerPeer.GetHasSocket: boolean;
 begin
   result := Sock.Socket <> INVALID_SOCKET;
