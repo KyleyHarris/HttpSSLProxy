@@ -413,7 +413,7 @@ end;
 
 { TSynapseTCPServerThread }
 
-constructor TSynapseTCPServerPeer.Create(AOwner:TSynapseTCPServer;hsock: tSocket);
+constructor TSynapseTCPServerPeer.Create(AOwner:TSynapseTCPServer;hsock:tSocket);
 var
   Socks:TList;
 begin
