@@ -21,10 +21,12 @@ type
     actGo: TAction;
     ListBox1: TListBox;
     Memo2: TMemo;
+    cbRemoveCompression: TCheckBox;
     procedure Timer1Timer(Sender: TObject);
     procedure actGoUpdate(Sender: TObject);
     procedure actGoExecute(Sender: TObject);
     procedure ListBox1Click(Sender: TObject);
+    procedure cbRemoveCompressionClick(Sender: TObject);
   private
     FProxy: TSSLProxyConn;
     function GetActive: Boolean;
@@ -65,6 +67,11 @@ procedure TframeProxy.BeforeDestruction;
 begin
   inherited;
   FreeAndNil(FProxy);
+end;
+
+procedure TframeProxy.cbRemoveCompressionClick(Sender: TObject);
+begin
+  FProxy.RemoveCompression := cbRemoveCompression.Checked;
 end;
 
 function TframeProxy.GetActive: Boolean;

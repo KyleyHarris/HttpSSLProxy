@@ -45,6 +45,7 @@ type
     FCS:TCriticalSection;
     FLog: string;
     FPackets:TObjectList;
+    FRemoveCompression: Boolean;
 
     procedure SetSSLPort(const Value: Integer);
     procedure TCPServerConnect(AThread:THssClientPeer );
@@ -55,6 +56,7 @@ type
     function GetLog: string;
     function GetActive: Boolean;
     procedure SetActive(const Value: Boolean);
+    procedure SetRemoveCompression(const Value: Boolean);
   public
     procedure AddLog(s:string);
     procedure Stop;
@@ -72,11 +74,12 @@ type
     property Host: string read FHost write SetHost;
     property Port: Integer read FPort write SetPort;
     property Active: Boolean read GetActive write SetActive;
+    property RemoveCompression: Boolean read FRemoveCompression write SetRemoveCompression;
   end;
 implementation
 
 uses
-  uHssSetupFile ;
+  uHssSetupFile , Math;
 
 { TSSLProxyConn }
 procedure TSSLProxyConn.AddLog(s: string);
@@ -96,7 +99,7 @@ constructor TSSLProxyConn.Create;
 begin
   FCs := TCriticalSection.Create;
   FPackets := TObjectList.Create(True);
-  
+  FRemoveCompression := True;
 end;
 
 destructor TSSLProxyConn.Destroy;
@@ -124,11 +127,11 @@ var
 begin
   FCS.Acquire;;
   try
-    for i := FPackets.Count - 1 downto 0 do
+    for i := 0 to FPackets.Count -1  do
     begin
       p := FPackets[i] as THttpPacket;
 
-      Result := Result + FormatDateTime('dd-mm HH:NN:zzz',p.TimeRecv)+' '+ Copy(p.HeaderRecv, 1, 50 ) + CRLF;
+      Result := Result + FormatDateTime('dd-mm HH:NN:zzz',p.TimeRecv)+' '+ Copy( p.HeaderRecv, 1, Min( 50 , Pos(#13, p.HeaderRecv) -1)) + CRLF;
     end;
   finally
     FCS.Release;
@@ -183,6 +186,11 @@ end;
 procedure TSSLProxyConn.SetPort(const Value: Integer);
 begin
   FPort := Value;
+end;
+
+procedure TSSLProxyConn.SetRemoveCompression(const Value: Boolean);
+begin
+  FRemoveCompression := Value;
 end;
 
 procedure TSSLProxyConn.SetSSLPort(const Value: Integer);
@@ -274,8 +282,12 @@ var
 
       if sPacket <> '' then
       begin
-        if Sametext( copy(sPacket,1,16),'accept-encoding:') then
+        if Sametext( copy(sPacket,1,16),'accept-encoding:') and FRemoveCompression then
+        begin
+          // remove any compression requests from the packet and the server made adhere to this.
+          // usefull for debugging compressed packet content.
           continue;
+        end else
 
         if Sametext( copy(sPacket,1,15),'content-length:') then
         begin
@@ -294,7 +306,8 @@ var
         if pos('Origin:', spacket) = 1 then
         begin
           // we must alter the host, so that the reciever believes they were the original target
-          // of the HTTP request, or it will be refused.
+          // of the HTTP request, or it will be refused. also stripping out HTTPS origins..
+          
           sPacket := OriginalOrigin;
           OriginalOrigin := sPacket;
         end;
@@ -359,8 +372,7 @@ begin
       Source := Target;
       Target := aThread.Sock;
       ProcessSource;
-
-      raise Exception.Create('GoodBye');
+     
     except
       on e:Exception do
       begin

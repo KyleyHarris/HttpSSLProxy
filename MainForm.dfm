@@ -3,7 +3,7 @@ object ProxyMainForm: TProxyMainForm
   Top = 0
   Caption = 'SSL Proxy'
   ClientHeight = 570
-  ClientWidth = 918
+  ClientWidth = 1238
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,19 +17,21 @@ object ProxyMainForm: TProxyMainForm
   object pcProxy: TPageControl
     Left = 0
     Top = 0
-    Width = 592
+    Width = 912
     Height = 570
     Align = alClient
     TabOrder = 0
     OnChange = pcProxyChange
+    ExplicitWidth = 592
   end
   object Panel1: TPanel
-    Left = 592
+    Left = 912
     Top = 0
     Width = 326
     Height = 570
     Align = alRight
     TabOrder = 1
+    ExplicitLeft = 592
     object Label1: TLabel
       Left = 24
       Top = 73

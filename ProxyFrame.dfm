@@ -1,11 +1,11 @@
 object frameProxy: TframeProxy
   Left = 0
   Top = 0
-  Width = 985
+  Width = 1027
   Height = 531
   TabOrder = 0
   DesignSize = (
-    985
+    1027
     531)
   object Label1: TLabel
     Left = 16
@@ -67,15 +67,16 @@ object frameProxy: TframeProxy
   object Memo1: TMemo
     Left = 16
     Top = 111
-    Width = 553
+    Width = 595
     Height = 201
     Anchors = [akLeft, akTop, akRight]
     Lines.Strings = (
       'Memo1')
     TabOrder = 5
+    ExplicitWidth = 553
   end
   object ListBox1: TListBox
-    Left = 575
+    Left = 617
     Top = 3
     Width = 407
     Height = 525
@@ -83,16 +84,29 @@ object frameProxy: TframeProxy
     ItemHeight = 13
     TabOrder = 6
     OnClick = ListBox1Click
+    ExplicitLeft = 575
   end
   object Memo2: TMemo
     Left = 16
     Top = 318
-    Width = 553
+    Width = 595
     Height = 202
     Anchors = [akLeft, akTop, akRight, akBottom]
     Lines.Strings = (
       'Memo1')
     TabOrder = 7
+    ExplicitWidth = 553
+  end
+  object cbRemoveCompression: TCheckBox
+    Left = 356
+    Top = 7
+    Width = 255
+    Height = 17
+    Caption = 'Intercept and Remove Compression Request'
+    Checked = True
+    State = cbChecked
+    TabOrder = 8
+    OnClick = cbRemoveCompressionClick
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer

@@ -73,6 +73,7 @@ const
   cOutgoingPort = 'outgoingPort';
   cOutgoingHost = 'outgoingHost';
   cCaption = 'Caption';
+  cRemoveCompression = 'RemoveCompression';
 
 { TProxyMainForm }
 
@@ -117,6 +118,7 @@ begin
       SetupFile.WriteInteger(sectionName, cOutgoingPort, StrToInt(Proxy[i].outgoingPort.Text) );
       SetupFile.WriteString(sectionName, cOutgoingHost, Proxy[i].outgoingHost.Text );
       SetupFile.WriteString(sectionName, cCaption, pcProxy.Pages[i].Caption );
+      SetupFile.WriteBool(sectionName, cRemoveCompression, Proxy[i].cbRemoveCompression.Checked);
 
     end;
 
@@ -175,6 +177,7 @@ begin
   Page.ProxyFrame.incomingPort.Text := IntToStr(SetupFile.ReadInteger(sectionName, cIncomingPort, 0));
   Page.ProxyFrame.outgoingHost.Text := SetupFile.ReadString(sectionName, cOutgoingHost, 'localhost');
   Page.ProxyFrame.outgoingPort.Text := IntToStr(SetupFile.ReadInteger(sectionName, cOutgoingPort, 0));
+  Page.ProxyFrame.cbRemoveCompression.Checked := SetupFile.ReadBool(sectionName, cRemoveCompression, True);
 end;
 
 procedure TProxyMainForm.BuildPages;
