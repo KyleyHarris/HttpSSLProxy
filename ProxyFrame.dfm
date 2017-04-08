@@ -73,7 +73,6 @@ object frameProxy: TframeProxy
     Lines.Strings = (
       'Memo1')
     TabOrder = 5
-    ExplicitWidth = 553
   end
   object ListBox1: TListBox
     Left = 617
@@ -84,7 +83,6 @@ object frameProxy: TframeProxy
     ItemHeight = 13
     TabOrder = 6
     OnClick = ListBox1Click
-    ExplicitLeft = 575
   end
   object Memo2: TMemo
     Left = 16
@@ -95,7 +93,6 @@ object frameProxy: TframeProxy
     Lines.Strings = (
       'Memo1')
     TabOrder = 7
-    ExplicitWidth = 553
   end
   object cbRemoveCompression: TCheckBox
     Left = 356

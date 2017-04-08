@@ -260,9 +260,8 @@ var
   NewPeer:TSynapseTCPServerPeer;
   FLastPingLog:TDateTime;
   I: integer;
-  ThreadList:TList;
 begin
-
+  FLastPingLog := now;
 
   NewPeer := nil;
 
@@ -412,7 +411,7 @@ end;
 constructor TSynapseTCPServerPeer.Create(AOwner:TSynapseTCPServer;hsock: tSocket);
 var
   Socks:TList;
-  Threads:TList;
+  
 begin
   SocketLocation := 'CREATED';
   FCreationDate := now;
@@ -424,21 +423,12 @@ begin
 
   Socks := FOwner.FClientSockets.LockList;
   try
-    Threads := FOwner.FWorkThreads.LockList;
-    try
-
-      AOwner.ThreadClass.Create(FOwner,self)
-
-    finally
-      FOwner.FWorkThreads.UnlockList;
-    end;
-
+    AOwner.ThreadClass.Create(FOwner,self);
     Socks.Add(self);
     AOwner.FPeakConnections := Max(AOwner.FPeakConnections,Socks.Count);
   finally
     FOwner.FClientSockets.UnlockList;
   end;
-
 
 end;
 
@@ -453,8 +443,6 @@ begin
 end;
 
 constructor TSynapseTCPServerThread.Create(AOwner: TSynapseTCPServer;APeer:TSynapseTCPServerPeer);
-var
-  i:integer;
 begin
   FPeer := APeer;
   FOwner := AOwner;
@@ -564,8 +552,6 @@ end;
 destructor TSynapseTCPServerPeer.Destroy;
 var
   Socks:TList;
-  Threads:TList;
-  i:integer;
 begin
   try
     Socks := FOwner.FClientSockets.LockList ;

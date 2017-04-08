@@ -8,7 +8,10 @@ uses
   ssl_openssl,
   SysUtils,
   Classes,
-  uSynapseTCPServer, Contnrs, SyncObjs;
+  uSynapseTCPServer,
+  Contnrs,
+  SyncObjs;
+  
 type
   THssClientPeer = TSynapseTCPServerPeer;
   THttpPacket = class
@@ -36,7 +39,6 @@ type
   end;
 
   TSSLProxyConn = class(TObject)
-
   private
     SSLServer:TSynapseTCPServer;
     FSSLPort: Integer;
@@ -64,7 +66,7 @@ type
     constructor Create;
     destructor Destroy; override;
     function PacketCount: Integer;
-    procedure Packet(aIndex: Integer; var aHeaderIn, aHeaderOut, aBodyIn, aBodyOut: string);
+    procedure Packet(aIndex: Integer; out aHeaderIn, aHeaderOut, aBodyIn, aBodyOut: string);
   published
 
     property Log: string read GetLog;
@@ -138,7 +140,7 @@ begin
   end;
 end;
 
-procedure TSSLProxyConn.Packet(aIndex: Integer; var aHeaderIn, aHeaderOut, aBodyIn, aBodyOut: string);
+procedure TSSLProxyConn.Packet(aIndex: Integer; out aHeaderIn, aHeaderOut, aBodyIn, aBodyOut: string);
 var
   P: THttpPacket;
 begin
@@ -171,11 +173,9 @@ begin
   if Value <> GetActive then
   begin
     if Value then
-
       StartSSLServer else
       Stop;
   end;
-
 end;
 
 procedure TSSLProxyConn.SetHost(const Value: string);
@@ -200,24 +200,22 @@ end;
 
 procedure TSSLProxyConn.StartSSLServer;
 begin
-try
-    SSLServer := TSynapseTCPServer.Create(IntToStr(FSSLPort),True,50);
-    SSLServer.OnConnect := TCPServerConnect;
-    SSLServer.OnExecute := TCPServerExecute;
-    SSLServer.OnDisconnect := TCPServerDisconnect;
-    SSLServer.ThreadClass := TSynapseTCPServerThread;
-    SSLServer.ServerName := 'SSL';
-        SSLServer.fSock.SSL.SSLType := LT_TLSv1_2;
-        SSLServer.fSock.SSL.CertCAFile := SSL_CERT_ROOT;
-        SSLServer.fSock.SSL.CertificateFile := SSL_CERT;
-        SSLServer.fSock.SSL.PrivateKeyfILE := SSL_Key;
-    SSLServer.Resume;
-except
-  on e:Exception do
-    AddLog(e.Message);
-
-
-end;
+  try
+      SSLServer := TSynapseTCPServer.Create(IntToStr(FSSLPort),True,50);
+      SSLServer.OnConnect := TCPServerConnect;
+      SSLServer.OnExecute := TCPServerExecute;
+      SSLServer.OnDisconnect := TCPServerDisconnect;
+      SSLServer.ThreadClass := TSynapseTCPServerThread;
+      SSLServer.ServerName := 'SSL';
+      SSLServer.fSock.SSL.SSLType := LT_TLSv1_2;
+      SSLServer.fSock.SSL.CertCAFile := SSL_CERT_ROOT;
+      SSLServer.fSock.SSL.CertificateFile := SSL_CERT;
+      SSLServer.fSock.SSL.PrivateKeyfILE := SSL_Key;
+      SSLServer.Resume;
+  except
+    on e:Exception do
+      AddLog(e.Message);
+  end;
 
 end;
 
@@ -239,7 +237,8 @@ begin
 
     on e:exception do
     begin
-      AddLog(e.Message);      raise;
+      AddLog(e.Message);
+      raise;
     end;
 
   end;
@@ -251,17 +250,15 @@ end;
 
 procedure TSSLProxyConn.TCPServerExecute(AThread: THssClientPeer);
 var
-  sPacket,sData: string;
-  sReply: string;
-  Client: TTCPBlockSocket;
+  sPacket,sData: AnsiString;
   PutDataSize: Integer;
   PutData: TMemoryStream;
   Source,Target:TTcpBlockSocket;
-  OriginalHost, OriginalOrigin:string;
+  OriginalHost, OriginalOrigin: AnsiString;
   HttpPacket: THttpPacket;
   bRecv: boolean;
 
-  function StreamString: string;
+  function StreamString: AnsiString;
   begin
     PutData.Position := 0;
     SetLength(Result, PutData.Size);

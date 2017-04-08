@@ -22,7 +22,6 @@ object ProxyMainForm: TProxyMainForm
     Align = alClient
     TabOrder = 0
     OnChange = pcProxyChange
-    ExplicitWidth = 592
   end
   object Panel1: TPanel
     Left = 912
@@ -31,7 +30,6 @@ object ProxyMainForm: TProxyMainForm
     Height = 570
     Align = alRight
     TabOrder = 1
-    ExplicitLeft = 592
     object Label1: TLabel
       Left = 24
       Top = 73

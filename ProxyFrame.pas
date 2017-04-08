@@ -3,8 +3,8 @@ unit ProxyFrame;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, SSLProxyConn, StdCtrls, ExtCtrls, ActnList;
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  SSLProxyConn, StdCtrls, ExtCtrls, ActnList;
 
 type
   TframeProxy = class(TFrame)

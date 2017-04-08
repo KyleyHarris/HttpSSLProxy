@@ -3,9 +3,20 @@ unit MainForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ProxyFrame, ComCtrls, ExtCtrls, ActnList, StdCtrls, SSLProxyConn;
-
+  Windows,
+  Messages,
+  SysUtils,
+  Variants,
+  Classes,
+  Graphics,
+  Controls,
+  Forms,
+  ProxyFrame,
+  ExtCtrls,
+  ActnList,
+  StdCtrls,
+  ComCtrls;
+  
 type
   TProxyTabSheet = class(TTabSheet)
   private

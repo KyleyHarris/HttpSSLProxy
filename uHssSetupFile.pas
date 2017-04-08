@@ -77,8 +77,6 @@ begin
   result := FixFile(SetupFile.ReadString(ASection,AField,ADefault)) ;
 end;
 
-
-var pcount:integer;
 initialization
   ApplicationName := Copy(ExtractFileName(ParamStr(0)),1,Pos('.',ExtractFileName(ParamStr(0)) )-1);
   AppPath := ExtractFilePath(ParamStr(0)) ;
