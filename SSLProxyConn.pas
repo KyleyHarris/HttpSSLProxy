@@ -250,7 +250,11 @@ end;
 
 procedure TSSLProxyConn.TCPServerExecute(AThread: THssClientPeer);
 var
+<<<<<<< HEAD
   sPacket,sData: AnsiString;
+=======
+  sPacket,sData: string;
+>>>>>>> 9213ac9... Add IFDEFS for FPC
   PutDataSize: Integer;
   PutData: TMemoryStream;
   Source,Target:TTcpBlockSocket;

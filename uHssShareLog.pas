@@ -13,6 +13,7 @@ type
 
 procedure HssLogExcept(E:Exception;Alocation:string='');
 procedure HssLog(AMessage:string;ALogType:THssLogType);
+procedure OutputDebugText(const AText : String);
 
 procedure HssSystem(AMessage:string);
 
@@ -37,7 +38,20 @@ threadvar
 implementation
 
 uses
+{$IFDEF MSWINDOWS}
   Windows;
+{$ELSE}
+  LazLogger;
+{$ENDIF}
+
+procedure OutputDebugText(const AText : String);
+begin
+{$IFDEF MSWINDOWS}
+  OutputDebugString(PChar(AText));
+{$ELSE}
+  DebugLn(AText);
+{$ENDIF}
+end;
 
 procedure HssSystem(AMessage:string);
 begin
@@ -55,7 +69,7 @@ procedure HssLog(AMessage:string;ALogType:THssLogType);
 begin
 
   if ALogType = hltOutputDebugString then
-    OutputDebugString(PChar(LoggingIP+ ' ' +AMessage)) else
+    OutputDebugText(LoggingIP+ ' ' +AMessage) else
   if Assigned(LogProc) and ( (ALogType in LogTypes ) or (ALogType = hltException)) then
     LogProc(LoggingIP+ #9 +LoggingInfo+#9+AMessage,ALogType);
 

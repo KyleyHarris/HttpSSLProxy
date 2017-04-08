@@ -1,0 +1,127 @@
+object frameProxy: TframeProxy
+  Left = 0
+  Height = 531
+  Top = 0
+  Width = 1027
+  ClientHeight = 531
+  ClientWidth = 1027
+  TabOrder = 0
+  DesignLeft = 466
+  DesignTop = 131
+  object Label1: TLabel
+    Left = 16
+    Height = 15
+    Top = 8
+    Width = 216
+    Caption = 'Connection Point On This Machine'
+    ParentColor = False
+  end
+  object Label2: TLabel
+    Left = 16
+    Height = 15
+    Top = 58
+    Width = 426
+    Caption = 'Data Server (HTTP ONLY, Normally on Local Host, but not required)'
+    ParentColor = False
+  end
+  object incomingHost: TEdit
+    Left = 16
+    Height = 21
+    Top = 27
+    Width = 121
+    Enabled = False
+    TabOrder = 0
+    Text = 'localhost'
+  end
+  object incomingPort: TEdit
+    Left = 144
+    Height = 21
+    Top = 27
+    Width = 81
+    TabOrder = 1
+    Text = '55111'
+  end
+  object outgoingHost: TEdit
+    Left = 16
+    Height = 21
+    Top = 77
+    Width = 121
+    TabOrder = 2
+    Text = 'localhost'
+  end
+  object outgoingPort: TEdit
+    Left = 144
+    Height = 21
+    Top = 77
+    Width = 81
+    TabOrder = 3
+    Text = '55111'
+  end
+  object btnGo: TButton
+    Left = 248
+    Height = 25
+    Top = 73
+    Width = 75
+    Action = actGo
+    TabOrder = 4
+  end
+  object Memo1: TMemo
+    Left = 16
+    Height = 201
+    Top = 111
+    Width = 595
+    Anchors = [akTop, akLeft, akRight]
+    Lines.Strings = (
+      'Memo1'
+    )
+    TabOrder = 5
+  end
+  object ListBox1: TListBox
+    Left = 617
+    Height = 525
+    Top = 3
+    Width = 407
+    Anchors = [akRight, akBottom]
+    ItemHeight = 0
+    OnClick = ListBox1Click
+    ScrollWidth = 403
+    TabOrder = 6
+    TopIndex = -1
+  end
+  object Memo2: TMemo
+    Left = 16
+    Height = 202
+    Top = 318
+    Width = 595
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Lines.Strings = (
+      'Memo1'
+    )
+    TabOrder = 7
+  end
+  object cbRemoveCompression: TCheckBox
+    Left = 356
+    Height = 26
+    Top = 7
+    Width = 311
+    Caption = 'Intercept and Remove Compression Request'
+    Checked = True
+    OnClick = cbRemoveCompressionClick
+    State = cbChecked
+    TabOrder = 8
+  end
+  object Timer1: TTimer
+    OnTimer = Timer1Timer
+    left = 336
+    top = 248
+  end
+  object Actions: TActionList
+    left = 264
+    top = 184
+    object actGo: TAction
+      Caption = 'Go'
+      OnExecute = actGoExecute
+      OnUpdate = actGoUpdate
+    end
+  end
+end

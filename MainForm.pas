@@ -3,6 +3,7 @@ unit MainForm;
 interface
 
 uses
+<<<<<<< HEAD
   Windows,
   Messages,
   SysUtils,
@@ -17,6 +18,16 @@ uses
   StdCtrls,
   ComCtrls;
   
+=======
+{$IFDEF FPC}
+  LCLIntf, LCLType,
+{$ELSE}
+  Windows,
+{$ENDIF}
+  SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ProxyFrame, ComCtrls, ExtCtrls, ActnList, StdCtrls;
+
+>>>>>>> 9213ac9... Add IFDEFS for FPC
 type
   TProxyTabSheet = class(TTabSheet)
   private
@@ -76,7 +87,11 @@ implementation
 uses
   uHssSetupFile;
 
-{$R *.dfm}
+{$IFDEF FPC}
+  {$R *.lfm}
+{$ELSE}
+  {$R *.dfm}
+{$ENDIF}
 const
   cProxyList = 'PROXY_LIST';
   cProxyPrefix = 'PROXY_';

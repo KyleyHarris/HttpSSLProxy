@@ -4,6 +4,9 @@ uses
   {$IFDEF FASTMM}
   FASTMM4 ,
   {$ENDIF}
+  {$IFDEF FPC}
+  Interfaces,
+  {$ENDIF}
   Forms,
   MainForm in 'MainForm.pas' {ProxyMainForm},
   SSLProxyConn in 'SSLProxyConn.pas',

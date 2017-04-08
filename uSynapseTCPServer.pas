@@ -33,7 +33,7 @@ unit uSynapseTCPServer;
 interface
 
 uses
-  blcksock, Classes, WinSock, ssl_openssl;
+  blcksock, Classes, ssl_openssl, synsock;
 
 type
 
@@ -158,7 +158,12 @@ implementation
 
 
 uses
-  SysUtils, synsock, Windows, Math,
+{$IFDEF FPC}
+  LCLIntf, LCLType,
+{$ELSE}
+  Windows,
+{$ENDIF}
+  SysUtils, Math,
     uHssShareLog, DateUtils;
 
 var
@@ -411,7 +416,10 @@ end;
 constructor TSynapseTCPServerPeer.Create(AOwner:TSynapseTCPServer;hsock: tSocket);
 var
   Socks:TList;
+<<<<<<< HEAD
   
+=======
+>>>>>>> 9213ac9... Add IFDEFS for FPC
 begin
   SocketLocation := 'CREATED';
   FCreationDate := now;
@@ -423,7 +431,19 @@ begin
 
   Socks := FOwner.FClientSockets.LockList;
   try
+<<<<<<< HEAD
     AOwner.ThreadClass.Create(FOwner,self);
+=======
+    FOwner.FWorkThreads.LockList;
+    try
+
+      AOwner.ThreadClass.Create(FOwner,self)
+
+    finally
+      FOwner.FWorkThreads.UnlockList;
+    end;
+
+>>>>>>> 9213ac9... Add IFDEFS for FPC
     Socks.Add(self);
     AOwner.FPeakConnections := Max(AOwner.FPeakConnections,Socks.Count);
   finally
@@ -524,13 +544,13 @@ begin
           begin
             if Peer.Sock.SSL.LastError <> 0 then
             begin
-              OutputDebugString(pchar('EXECUTE SSLERROR '+IntToStr(Peer.Sock.SSL.LastError )+' '+Peer.Sock.SSL.LastErrorDesc ));
+              OutputDebugText('EXECUTE SSLERROR '+IntToStr(Peer.Sock.SSL.LastError )+' '+Peer.Sock.SSL.LastErrorDesc );
               Disconnect(FPeer);
             end;
           end;
           else
           begin
-           OutputDebugString(pchar(e.ClassName+' '+e.Message));
+           OutputDebugText(e.ClassName+' '+e.Message);
            Disconnect(FPeer);
           end;
         end;
@@ -617,14 +637,14 @@ begin
         begin
           if APeer.Sock.SSL.LastError <> 0 then
           begin
-            OutputDebugString(pchar('PROCESS SSLERROR '+IntToStr(APeer.Sock.SSL.LastError )+' '+APeer.Sock.SSL.LastErrorDesc ));
+            OutputDebugText('PROCESS SSLERROR '+IntToStr(APeer.Sock.SSL.LastError )+' '+APeer.Sock.SSL.LastErrorDesc);
             Disconnect(APeer);
           end;
         end;
         WSAETIMEDOUT:;
         else
         begin
-          OutputDebugString(pchar(e.ClassName+' '+e.Message));
+          OutputDebugText(e.ClassName+' '+e.Message);
           Disconnect(APeer);
         end;
       end;

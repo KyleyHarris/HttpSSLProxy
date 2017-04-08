@@ -77,6 +77,10 @@ begin
   result := FixFile(SetupFile.ReadString(ASection,AField,ADefault)) ;
 end;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9213ac9... Add IFDEFS for FPC
 initialization
   ApplicationName := Copy(ExtractFileName(ParamStr(0)),1,Pos('.',ExtractFileName(ParamStr(0)) )-1);
   AppPath := ExtractFilePath(ParamStr(0)) ;
