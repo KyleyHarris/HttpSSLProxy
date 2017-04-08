@@ -3,8 +3,11 @@ unit MainForm;
 interface
 
 uses
-<<<<<<< HEAD
+{$IFDEF FPC}
+  LCLIntf, LCLType,
+{$ELSE}
   Windows,
+{$ENDIF}
   Messages,
   SysUtils,
   Variants,
@@ -17,17 +20,7 @@ uses
   ActnList,
   StdCtrls,
   ComCtrls;
-  
-=======
-{$IFDEF FPC}
-  LCLIntf, LCLType,
-{$ELSE}
-  Windows,
-{$ENDIF}
-  SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ProxyFrame, ComCtrls, ExtCtrls, ActnList, StdCtrls;
 
->>>>>>> 9213ac9... Add IFDEFS for FPC
 type
   TProxyTabSheet = class(TTabSheet)
   private

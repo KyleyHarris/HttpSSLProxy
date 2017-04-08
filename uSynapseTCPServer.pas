@@ -416,10 +416,6 @@ end;
 constructor TSynapseTCPServerPeer.Create(AOwner:TSynapseTCPServer;hsock: tSocket);
 var
   Socks:TList;
-<<<<<<< HEAD
-  
-=======
->>>>>>> 9213ac9... Add IFDEFS for FPC
 begin
   SocketLocation := 'CREATED';
   FCreationDate := now;
@@ -431,19 +427,7 @@ begin
 
   Socks := FOwner.FClientSockets.LockList;
   try
-<<<<<<< HEAD
-    AOwner.ThreadClass.Create(FOwner,self);
-=======
-    FOwner.FWorkThreads.LockList;
-    try
-
-      AOwner.ThreadClass.Create(FOwner,self)
-
-    finally
-      FOwner.FWorkThreads.UnlockList;
-    end;
-
->>>>>>> 9213ac9... Add IFDEFS for FPC
+    FOwner.ThreadClass.Create(FOwner,self);
     Socks.Add(self);
     AOwner.FPeakConnections := Max(AOwner.FPeakConnections,Socks.Count);
   finally

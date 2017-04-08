@@ -127,7 +127,8 @@ var
   P: THttpPacket;
   i: Integer;
 begin
-  FCS.Acquire;;
+  Result := '';
+  FCS.Acquire;
   try
     for i := 0 to FPackets.Count -1  do
     begin
@@ -250,11 +251,7 @@ end;
 
 procedure TSSLProxyConn.TCPServerExecute(AThread: THssClientPeer);
 var
-<<<<<<< HEAD
   sPacket,sData: AnsiString;
-=======
-  sPacket,sData: string;
->>>>>>> 9213ac9... Add IFDEFS for FPC
   PutDataSize: Integer;
   PutData: TMemoryStream;
   Source,Target:TTcpBlockSocket;

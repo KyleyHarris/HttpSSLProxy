@@ -3,10 +3,6 @@ unit ProxyFrame;
 interface
 
 uses
-<<<<<<< HEAD
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  SSLProxyConn, StdCtrls, ExtCtrls, ActnList;
-=======
 {$IFDEF FPC}
   LCLIntf, LCLType,
 {$ELSE}
@@ -14,7 +10,6 @@ uses
 {$ENDIF}
   SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, SSLProxyConn, StdCtrls, ExtCtrls, ActnList;
->>>>>>> 9213ac9... Add IFDEFS for FPC
 
 type
   TframeProxy = class(TFrame)
