@@ -137,9 +137,7 @@ type
   TSynapseTCPServerThread = class(TThread)
   private
     FOwner:TSynapseTCPServer;
-    procedure SetName;
   protected
-
     FPeer:TSynapseTCPServerPeer;
     ID:string;
     procedure BeforeExecute;virtual;
@@ -163,8 +161,7 @@ uses
 {$ELSE}
   Windows,
 {$ENDIF}
-  SysUtils, Math,
-    uHssShareLog, DateUtils;
+  SysUtils, Math, uHssShareLog, DateUtils;
 
 var
   PeerID:integer=0;
@@ -501,7 +498,7 @@ end;
 
 procedure TSynapseTCPServerThread.Execute;
 begin
-  SetName;
+  NameThreadForDebugging('Synapse Worker ' + ID,$FFFFFFFF);
   BeforeExecute;
   try
     while not Terminated do
@@ -528,13 +525,13 @@ begin
           begin
             if Peer.Sock.SSL.LastError <> 0 then
             begin
-              OutputDebugText('EXECUTE SSLERROR '+IntToStr(Peer.Sock.SSL.LastError )+' '+Peer.Sock.SSL.LastErrorDesc );
+              OutputDebugText(Format('EXECUTE SSLERROR %d %s',[Peer.Sock.SSL.LastError,Peer.Sock.SSL.LastErrorDesc]));
               Disconnect(FPeer);
             end;
           end;
           else
           begin
-           OutputDebugText(e.ClassName+' '+e.Message);
+           OutputDebugText(Format('%s %s',[e.ClassName,e.Message]));
            Disconnect(FPeer);
           end;
         end;
@@ -621,14 +618,14 @@ begin
         begin
           if APeer.Sock.SSL.LastError <> 0 then
           begin
-            OutputDebugText('PROCESS SSLERROR '+IntToStr(APeer.Sock.SSL.LastError )+' '+APeer.Sock.SSL.LastErrorDesc);
+            OutputDebugText(Format('PROCESS SSLERROR %d %s',[APeer.Sock.SSL.LastError,APeer.Sock.SSL.LastErrorDesc]));
             Disconnect(APeer);
           end;
         end;
         WSAETIMEDOUT:;
         else
         begin
-          OutputDebugText(e.ClassName+' '+e.Message);
+          OutputDebugText(Format('%s %s',[e.ClassName,e.Message]));
           Disconnect(APeer);
         end;
       end;
@@ -755,25 +752,6 @@ begin
   end;
 
   *)
-end;
-
-procedure TSynapseTCPServerThread.SetName;
-{$IFDEF MSWINDOWS}
-var
-  ThreadNameInfo: TThreadNameInfo;
-{$ENDIF}
-begin
-{$IFDEF MSWINDOWS}
-  ThreadNameInfo.FType := $1000;
-  ThreadNameInfo.FName := PChar('Synapse Worker '+ID);
-  ThreadNameInfo.FThreadID := $FFFFFFFF;
-  ThreadNameInfo.FFlags := 0;
-
-  try
-    RaiseException( $406D1388, 0, sizeof(ThreadNameInfo) div sizeof(LongWord), @ThreadNameInfo );
-  except
-  end;
-{$ENDIF}
 end;
 
 end.
