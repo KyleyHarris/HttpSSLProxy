@@ -1,9 +1,17 @@
 unit MainForm;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
+{$IFnDEF FPC}
   Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages,
+{$ENDIF}
   Messages,
   SysUtils,
   Variants,
@@ -18,6 +26,9 @@ uses
   ComCtrls;
   
 type
+
+  { TProxyTabSheet }
+
   TProxyTabSheet = class(TTabSheet)
   private
     FProxyFrame: TframeProxy;
@@ -28,26 +39,31 @@ type
 
   public
     procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
     property ProxyFrame: TframeProxy read FProxyFrame;
 
   end;
 
   TProxyMainForm = class(TForm)
-    pcProxy: TPageControl;
-    Panel1: TPanel;
-    Button1: TButton;
     ActionList1: TActionList;
     actStartAll: TAction;
-    Button2: TButton;
     actStopAll: TAction;
-    Button3: TButton;
     actDelete: TAction;
-    Button4: TButton;
     actAdd: TAction;
-    edtName: TEdit;
-    Label1: TLabel;
-    Button5: TButton;
     actSave: TAction;
+    Panel1: TPanel;
+    Label1: TLabel;
+    Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
+    Button4: TButton;
+    edtName: TEdit;
+    Button5: TButton;
+    pcProxy: TPageControl;
+    Memo1: TMemo;
+    Timer1: TTimer;
+    Button6: TButton;
+    CheckBox1: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure actStartAllExecute(Sender: TObject);
     procedure actStopAllExecute(Sender: TObject);
@@ -57,7 +73,12 @@ type
     procedure pcProxyChange(Sender: TObject);
     procedure edtNameChange(Sender: TObject);
     procedure actSaveExecute(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure FormDestroy(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
   private
+    TempLog: TStringList;
     procedure BuildPages;
     procedure BuildDefaultPages;
     function ProxyTabSheet:TProxyTabSheet;
@@ -74,7 +95,7 @@ var
 implementation
 
 uses
-  uHssSetupFile;
+  uHssSetupFile, uHssShareLog, SSLProxyConn;
 
 {$R *.dfm}
 const
@@ -87,6 +108,16 @@ const
   cRemoveCompression = 'RemoveCompression';
 
 { TProxyMainForm }
+procedure LogMessage(AMessage:string;ALogType:THssLogType);
+begin
+  GlobalCS.Acquire;
+  try
+    ProxyMainForm.TempLog.Add(AMessage);
+  finally
+    GlobalCS.Release;
+  end;
+end;
+
 
 procedure TProxyMainForm.actAddExecute(Sender: TObject);
 begin
@@ -210,15 +241,40 @@ begin
   end;
 end;
 
+procedure TProxyMainForm.Button6Click(Sender: TObject);
+begin
+  GlobalCS.Acquire;
+  try
+    Memo1.Lines.Clear;
+  finally
+    GlobalCS.Release;
+
+  end;
+end;
+
 procedure TProxyMainForm.edtNameChange(Sender: TObject);
 begin
   pcProxy.ActivePage.Caption := edtName.Text;
 end;
 
+procedure TProxyMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  LogProc := nil;
+  actStartAll.Execute;
+  CanClose := True;
+end;
+
 procedure TProxyMainForm.FormCreate(Sender: TObject);
 begin
+  TempLog := TStringList.Create;
+  LogProc := LogMessage;
   BuildPages;
   pcProxyChange(nil);
+end;
+
+procedure TProxyMainForm.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(TempLog);
 end;
 
 function TProxyMainForm.GetProxy(aIndex: Integer): TFrameProxy;
@@ -239,6 +295,19 @@ begin
   Result.PageControl := pcProxy;
 end;
 
+procedure TProxyMainForm.Timer1Timer(Sender: TObject);
+begin
+  GlobalCS.Acquire;
+  try
+    if (TempLog.Count = 0) or (CheckBox1.Checked) then
+      exit;
+    Memo1.Lines.AddStrings(TempLog);
+    TempLog.Clear;
+  finally
+    GlobalCS.Release;
+  end;
+end;
+
 { TProxyTabSheet }
 
 procedure TProxyTabSheet.AfterConstruction;
@@ -252,6 +321,12 @@ begin
     Sleep(1);
   until ProxyMainForm.FindComponent(sName) = nil;
   FProxyFrame.Name := sName;
+end;
+
+procedure TProxyTabSheet.BeforeDestruction;
+begin
+  inherited BeforeDestruction;
+  FreeAndNil(FProxyFrame);
 end;
 
 procedure TProxyTabSheet.Notification(AComponent: TComponent; Operation: TOperation);

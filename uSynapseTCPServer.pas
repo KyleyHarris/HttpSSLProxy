@@ -30,6 +30,10 @@
 *)
 unit uSynapseTCPServer;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
@@ -101,6 +105,7 @@ type
 
   TSynapseTCPServerPeer = class(TObject)
   private
+    FIDstr: string;
     FOwner:TSynapseTCPServer;
     CSock: TSocket;
     FConnectState:TConnectionState;
@@ -121,6 +126,7 @@ type
     ID:integer;
     Pass:integer;
     Sock:TTCPBlockSocket;
+    procedure Log(s: string);
     procedure SocketTest;
     procedure InitializeSocket;
     property Data:TObject read FExtraData write FExtraData;
@@ -137,7 +143,6 @@ type
   TSynapseTCPServerThread = class(TThread)
   private
     FOwner:TSynapseTCPServer;
-    procedure SetName;
   protected
 
     FPeer:TSynapseTCPServerPeer;
@@ -158,7 +163,12 @@ implementation
 
 
 uses
-  SysUtils, synsock, Windows, Math,
+{$IFnDEF FPC}
+  Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages,
+{$ENDIF}
+  SysUtils, synsock, Math,
     uHssShareLog, DateUtils;
 
 var
@@ -286,11 +296,12 @@ begin
             begin
               try
                 NewPeer := TSynapseTCPServerPeer.create(Self, ClientSock);
+                NewPeer.Log('Bind Socket');
 
               except
                 on e:exception do
                 begin
-                  HssLogExcept(e,'Synapse Bind Socket');
+                  NewPeer.Log(e.Message + ' Synapse Bind Socket');
                 end;
 
               end;
@@ -311,7 +322,7 @@ begin
           //Do some testing.
           begin
 
-            if MinutesBetween(now,FLastPingLog) > 2 then
+            if false and (MinutesBetween(now,FLastPingLog) > 2) then
             begin
               FLastPingLog := now;
 
@@ -319,7 +330,7 @@ begin
 
                 with FClientSockets.LockList do
                 try
-                  HssLog('TCPLISTENER PING '+FPort+' Active TCP Connections '+IntToStr(Count)+'Active Threads '+IntToStr(ThreadCount)+' PEAK CONNECTIONS '+IntToStr(FPeakConnections),hltDebug);
+        //          HssLog('TCPLISTENER PING '+FPort+' Active TCP Connections '+IntToStr(Count)+'Active Threads '+IntToStr(ThreadCount)+' PEAK CONNECTIONS '+IntToStr(FPeakConnections),hltDebug);
 
                   for I := 0 to Count - 1 do
                     with TSynapseTCPServerPeer(Items[i]) do
@@ -417,6 +428,10 @@ begin
   FCreationDate := now;
   FLastAccessTime := now;
   ID := InterlockedIncrement(PeerID);
+  FIDstr := IntToStr(ID);
+  while length(FIDstr) < 4 do
+    FIDstr := ' '+FIDstr;
+
   Csock := Hsock;
   FOwner := AOwner;
   ConnectState := csConnecting;
@@ -497,7 +512,6 @@ end;
 
 procedure TSynapseTCPServerThread.Execute;
 begin
-  SetName;
   BeforeExecute;
   try
     while not Terminated do
@@ -519,18 +533,17 @@ begin
     except
       on e:ESynapseError do
       begin
+        Peer.Log(IntToStr(e.ErrorCode));
         case e.ErrorCode of
           10091:
           begin
             if Peer.Sock.SSL.LastError <> 0 then
             begin
-              OutputDebugString(pchar('EXECUTE SSLERROR '+IntToStr(Peer.Sock.SSL.LastError )+' '+Peer.Sock.SSL.LastErrorDesc ));
               Disconnect(FPeer);
             end;
           end;
           else
           begin
-           OutputDebugString(pchar(e.ClassName+' '+e.Message));
            Disconnect(FPeer);
           end;
         end;
@@ -617,14 +630,12 @@ begin
         begin
           if APeer.Sock.SSL.LastError <> 0 then
           begin
-            OutputDebugString(pchar('PROCESS SSLERROR '+IntToStr(APeer.Sock.SSL.LastError )+' '+APeer.Sock.SSL.LastErrorDesc ));
             Disconnect(APeer);
           end;
         end;
         WSAETIMEDOUT:;
         else
         begin
-          OutputDebugString(pchar(e.ClassName+' '+e.Message));
           Disconnect(APeer);
         end;
       end;
@@ -677,15 +688,13 @@ begin
     Sock.SSL.CertificateFile := FOwner.fSock.SSL.CertificateFile;
     Sock.SSL.PrivateKeyFile := FOwner.fSock.SSL.PrivateKeyFile;
     Sock.SSL.SSLType := LT_TLSv1_2;
-//    Sock.SSLAcceptConnection;
-
-
       if (not Sock.SSLAcceptConnection) or
          (Sock.SSL.LastError <> 0) then
       begin
-        HssLog('Error while accepting SSL connection: ' + Sock.SSL.LastErrorDesc, hltException);
+        Log('Error while accepting SSL connection: ' + Sock.SSL.LastErrorDesc);
         FInitialized := false;
       end;
+      Log('initialized ssl');
     except
       on e:ESynapseError do
       begin
@@ -696,12 +705,15 @@ begin
             FInitialized := false;
             if Sock.SSL.LastError <> 0 then
             begin
+              Log(inttostr(e.ErrorCode) + e.ErrorMessage);
+              Log(inttostr(sock.SSL.LastError) + sock.SSL.LastErrorDesc);
               raise;
             end;
           end;
           else
           begin
-           raise;
+            Log(inttostr(e.ErrorCode) + e.ErrorMessage);
+            raise;
           end;
         end;
       end;
@@ -715,6 +727,11 @@ begin
   end;
 end;
 
+end;
+
+procedure TSynapseTCPServerPeer.Log(s: string);
+begin
+  HssSystem( FIDstr + ': '+s);
 end;
 
 procedure TSynapseTCPServerPeer.SetConnectState(
@@ -753,23 +770,5 @@ begin
   *)
 end;
 
-procedure TSynapseTCPServerThread.SetName;
-{$IFDEF MSWINDOWS}
-var
-  ThreadNameInfo: TThreadNameInfo;
-{$ENDIF}
-begin
-{$IFDEF MSWINDOWS}
-  ThreadNameInfo.FType := $1000;
-  ThreadNameInfo.FName := PChar('Synapse Worker '+ID);
-  ThreadNameInfo.FThreadID := $FFFFFFFF;
-  ThreadNameInfo.FFlags := 0;
-
-  try
-    RaiseException( $406D1388, 0, sizeof(ThreadNameInfo) div sizeof(LongWord), @ThreadNameInfo );
-  except
-  end;
-{$ENDIF}
-end;
 
 end.

@@ -57,7 +57,7 @@ begin
   if ALogType = hltOutputDebugString then
     OutputDebugString(PChar(LoggingIP+ ' ' +AMessage)) else
   if Assigned(LogProc) and ( (ALogType in LogTypes ) or (ALogType = hltException)) then
-    LogProc(LoggingIP+ #9 +LoggingInfo+#9+AMessage,ALogType);
+    LogProc(AMessage,ALogType);
 
   if IsConsole and (ALogType = hltException) then
     HssSystem(AMessage);

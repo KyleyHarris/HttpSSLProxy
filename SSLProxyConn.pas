@@ -11,32 +11,9 @@ uses
   uSynapseTCPServer,
   Contnrs,
   SyncObjs;
-  
+
 type
   THssClientPeer = TSynapseTCPServerPeer;
-  THttpPacket = class
-  private
-    FHeaderReply: string;
-    FBodyRecv: string;
-    FHeaderRecv: string;
-    FBodyReply: string;
-    FTimeReply: TDateTime;
-    FTimeRecv: TDateTime;
-    procedure SetBodyRecv(const Value: string);
-    procedure SetBodyReply(const Value: string);
-    procedure SetHeaderRecv(const Value: string);
-    procedure SetHeaderReply(const Value: string);
-    procedure SetTimeRecv(const Value: TDateTime);
-    procedure SetTimeReply(const Value: TDateTime);
-  published
-  public
-    property TimeRecv: TDateTime read FTimeRecv write SetTimeRecv;
-    property TimeReply: TDateTime read FTimeReply write SetTimeReply;
-    property HeaderRecv: string read FHeaderRecv write SetHeaderRecv;
-    property BodyRecv:string read FBodyRecv write SetBodyRecv;
-    property HeaderReply:string read FHeaderReply write SetHeaderReply;
-    property BodyReply:string read FBodyReply write SetBodyReply;
-  end;
 
   TSSLProxyConn = class(TObject)
   private
@@ -44,9 +21,7 @@ type
     FSSLPort: Integer;
     FPort: Integer;
     FHost: string;
-    FCS:TCriticalSection;
     FLog: string;
-    FPackets:TObjectList;
     FRemoveCompression: Boolean;
 
     procedure SetSSLPort(const Value: Integer);
@@ -55,21 +30,17 @@ type
     procedure TCPServerExecute(AThread: THssClientPeer );
     procedure SetHost(const Value: string);
     procedure SetPort(const Value: Integer);
-    function GetLog: string;
     function GetActive: Boolean;
     procedure SetActive(const Value: Boolean);
     procedure SetRemoveCompression(const Value: Boolean);
   public
-    procedure AddLog(s:string);
+    Me:Integer;
     procedure Stop;
     procedure StartSSLServer;
     constructor Create;
     destructor Destroy; override;
-    function PacketCount: Integer;
-    procedure Packet(aIndex: Integer; out aHeaderIn, aHeaderOut, aBodyIn, aBodyOut: string);
   published
 
-    property Log: string read GetLog;
 
     property SSLPort:Integer read FSSLPort write SetSSLPort;
 
@@ -78,37 +49,24 @@ type
     property Active: Boolean read GetActive write SetActive;
     property RemoveCompression: Boolean read FRemoveCompression write SetRemoveCompression;
   end;
+
+var
+  GlobalCS : TCriticalSection;
 implementation
 
 uses
-  uHssSetupFile , Math;
+  uHssSetupFile , Math, uHssShareLog, DateUtils;
 
 { TSSLProxyConn }
-procedure TSSLProxyConn.AddLog(s: string);
-begin
-  FCS.Acquire;;
-  try
-    if Length(FLog) > 4000 then
-      FLog := '';
-    FLog := s + CRLF + FLog;
-  
-  finally
-    FCS.Release;
-  end;
-end;
 
 constructor TSSLProxyConn.Create;
 begin
-  FCs := TCriticalSection.Create;
-  FPackets := TObjectList.Create(True);
   FRemoveCompression := True;
 end;
 
 destructor TSSLProxyConn.Destroy;
 begin
   Stop;
-  FreeAndNil(FPackets);
-  FCS.Free;
   inherited;
 end;
 
@@ -119,52 +77,6 @@ begin
   begin
     Stop;
     Result := False;
-  end;
-end;
-
-function TSSLProxyConn.GetLog: string;
-var
-  P: THttpPacket;
-  i: Integer;
-begin
-  FCS.Acquire;;
-  try
-    for i := 0 to FPackets.Count -1  do
-    begin
-      p := FPackets[i] as THttpPacket;
-
-      Result := Result + FormatDateTime('dd-mm HH:NN:zzz',p.TimeRecv)+' '+ Copy( p.HeaderRecv, 1, Min( 50 , Pos(#13, p.HeaderRecv) -1)) + CRLF;
-    end;
-  finally
-    FCS.Release;
-  end;
-end;
-
-procedure TSSLProxyConn.Packet(aIndex: Integer; out aHeaderIn, aHeaderOut, aBodyIn, aBodyOut: string);
-var
-  P: THttpPacket;
-begin
-  FCS.Acquire;
-  try
-    if aIndex >= FPackets.Count then
-      exit;
-    P := FPackets[aIndex] as THttpPacket;
-    aHeaderIn := p.HeaderRecv;
-    aHeaderOut := p.HeaderReply;
-    aBodyIn := p.BodyRecv;
-    aBodyOut := p.BodyReply;
-  finally
-    FCs.Release;
-  end;
-end;
-
-function TSSLProxyConn.PacketCount: Integer;
-begin
-  FCS.Acquire;
-  try
-    Result := FPackets.Count;
-  finally
-    FCs.Release;
   end;
 end;
 
@@ -212,9 +124,11 @@ begin
       SSLServer.fSock.SSL.CertificateFile := SSL_CERT;
       SSLServer.fSock.SSL.PrivateKeyfILE := SSL_Key;
       SSLServer.Resume;
+      HssSystem(Format('HTTPS Proxy Started on https://localhost:%d Routing to http://%s:%d/',[FSSLPort, Host, Port]));
+
   except
     on e:Exception do
-      AddLog(e.Message);
+      HssSystem('CANNOT START PROXY ' +e.Message);
   end;
 
 end;
@@ -222,6 +136,7 @@ end;
 procedure TSSLProxyConn.Stop;
 begin
   FreeAndNil(SSlServer);
+  HssSystem(Format('HTTPS Proxy Ended on https://localhost:%d Routing to http://%s:%d/',[FSSLPort, Host, Port]));
 end;
 
 procedure TSSLProxyConn.TCPServerConnect(AThread: THssClientPeer);
@@ -229,15 +144,16 @@ var
   Client: TTCPBlockSocket;
 begin
   try
-  Client := TTCPBlockSocket.Create;
-  Client.Connect(Host, IntToStr(Port));
-  AThread.Data := Client;
-  AThread.FreeData := True;
+    Client := TTCPBlockSocket.Create;
+    Client.RaiseExcept := True;
+    Client.Tag := 1;
+    Client.Connect(Host, IntToStr(Port));
+    AThread.Data := Client;
+    AThread.FreeData := True;
   except
-
     on e:exception do
     begin
-      AddLog(e.Message);
+      AThread.Log(e.ClassName+' '+ e.Message);
       raise;
     end;
 
@@ -246,6 +162,7 @@ end;
 
 procedure TSSLProxyConn.TCPServerDisconnect(AThread: THssClientPeer);
 begin
+  AThread.Log('Disconnected');
 end;
 
 procedure TSSLProxyConn.TCPServerExecute(AThread: THssClientPeer);
@@ -255,8 +172,12 @@ var
   PutData: TMemoryStream;
   Source,Target:TTcpBlockSocket;
   OriginalHost, OriginalOrigin: AnsiString;
-  HttpPacket: THttpPacket;
-  bRecv: boolean;
+  IncomingRequest: boolean;
+  sCrossOriginRequest: Ansistring;
+  sOriginalData: AnsiString;
+  MessageType: string;
+  Referer: string;
+
 
   function StreamString: AnsiString;
   begin
@@ -264,77 +185,175 @@ var
     SetLength(Result, PutData.Size);
     PutData.ReadBuffer(Result[1], PutData.Size);
   end;
+
   procedure ProcessSource;
+  var
+    temp: string;
+    Header: TStringList;
+    timer: TDateTime;
+    i: Integer;
   begin
+    Header := TStringList.Create;
+    Header.NameValueSeparator := ':';
     // As a pass through ssl proxy, we need to understand and process the html correctly
     // and alter the host header to ensure that IIS Express and others dont block requests
     // coming from an outside source.
     PutDataSize := 0;
     sData := '';
+    sOriginalData := '';
     // First read the HTTP Header.
     // Http Header are standard CRLF lines
     // End of header is determined by finding an Empty Line;
+    if IncomingRequest then
+      AThread.Log('Reading Client Header') else
+      AThread.Log('Reading Server Header');
     repeat
       sPacket := Source.RecvString(-1);
-
-      if sPacket <> '' then
-      begin
-        if Sametext( copy(sPacket,1,16),'accept-encoding:') and FRemoveCompression then
-        begin
-          // remove any compression requests from the packet and the server made adhere to this.
-          // usefull for debugging compressed packet content.
-          continue;
-        end else
-
-        if Sametext( copy(sPacket,1,15),'content-length:') then
-        begin
-          // all PUT/POST commands will have content, which has length specified
-          // we must read the exact correct amount and no more for efficent processing and
-          // knowing the end of the message.
-          PutDataSize := StrToInt(trim(copy(sPacket,16,100)) );
-        end else
-        if pos('Host:', spacket) = 1 then
-        begin
-          // we must alter the host, so that the reciever believes they were the original target
-          // of the HTTP request, or it will be refused.
-          sPacket := OriginalHost;
-          OriginalHost := sPacket;
-        end else
-        if pos('Origin:', spacket) = 1 then
-        begin
-          // we must alter the host, so that the reciever believes they were the original target
-          // of the HTTP request, or it will be refused. also stripping out HTTPS origins..
-          
-          sPacket := OriginalOrigin;
-          OriginalOrigin := sPacket;
-        end;
-
-      end;
-      // add header line to data, including the end-of-line empty line
-      sData := sData + sPacket + CRLF;
-
+      Header.Add(sPacket);
+      AThread.Log(spacket);
     until sPAcket = '';
-    PutData := nil;
 
-    if bRecv then
-      HttpPacket.HeaderRecv := sData else
-      HttpPacket.HeaderReply := sData;
+    if IncomingRequest then
+      AThread.Log('Client Header Complete') else
+      AThread.Log('Server Header Complete');
+
+    sOriginalData := Header.Text;
+    if IncomingRequest then
+      MessageType := Copy(header[0], 1, pos(' ',Header[0])-1);
+
+    if IncomingRequest then
+    begin
+      Referer := Header.Values['Referer'];
+  //    if Referer <> '' then
+   //     Header.Values['Referer'] := NewReferer;
+
+    end;
+
+    i := Header.IndexOfName('accept-encoding');
+    if FRemoveCompression and (i>=0)then
+      Header.Delete(i);
+
+    temp := Header.Values['content-length'];
+    if temp <> '' then
+      PutDataSize := StrToInt(Temp)
+    else
+      PutDataSize := 0;
+
+    temp := Header.Values['Host'];
+    if IncomingRequest and (temp <> '' ) then
+    begin
+      AThread.Log('Replace Client Host - ' + OriginalHost);
+      Header.Values['Host'] := OriginalHost;
+      OriginalHost := temp;
+    end;
+
+    if IncomingRequest then
+    begin
+
+      temp := Header.Values['Origin'];
+      Header.Values['Origin'] := OriginalOrigin;
+      AThread.Log('Replace Client Origin - ' + OriginalOrigin);
+      OriginalOrigin := temp;
+      if IncomingRequest then
+      begin
+        sCrossOriginRequest := OriginalOrigin;
+        AThread.Log('Record Origin - ' + OriginalOrigin);
+      end;
+    end;
+
+
+    if not IncomingRequest then
+    begin
+      Header.Values['Access-Control-Allow-Origin'] := sCrossOriginRequest;
+      AThread.Log('Set Access-Control-Allow-Origin - '+sCrossOriginRequest);
+    end;
+   for i := Header.Count - 1 downto 0 do
+       if trim(Header[i]) = '' then
+         Header.Delete(i);
+
+    sData := Header.Text+#13#10;
+    PutData  := nil;
 
     // Send the HTTP Header to the target
+    if IncomingRequest then
+      AThread.Log('Transmit Client Header to Server') else
+      AThread.Log('Transmit Server Header to Client');
     Target.SendString(sData);
+
     if PutDataSize <> 0 then
     begin
      PutData := TMemoryStream.Create;
      try
-       PutData.Size := PutDataSize;
-       PutData.Position := 0;
+       try
+         PutData.Size := PutDataSize;
+         PutData.Position := 0;
+         if IncomingRequest then
+           AThread.Log('Read Client Body. Size='+IntToStr(PutDataSize)) else
+           AThread.Log('Read Server Body. Size='+IntToStr(PutDataSize));
 
-       Source.RecvBufferEx(PutData.Memory,PutDataSize,-1);
+         Source.RecvBufferEx(PutData.Memory,PutDataSize,-1);
+         AThread.Log('Finished Reading Body');
+
+         temp := Source.RecvBufferStr(1, 2);
+         if temp <> '' then
+         begin
+           AThread.Log('Found content-overflow exceeding Content-Length');
+           repeat
+             PutData.Write(temp[1], length(temp));
+             temp := Source.RecvBufferStr(1,5);
+           until (temp = '' ) ;
+         end else
+         AThread.Log('Packet Complete. Total Size:'+IntToStr(PutData.Size));
+       except
+         on e:ESynapseError do
+         begin
+           if (e.ErrorCode <> 10054) and (e.ErrorCode<> 10060) then
+             raise;
+         end;
+       end;
+       AThread.Log('');
+       PutData.Position := 0;
+       if PutData.Size > 0 then
+       begin
+         AThread.Log('Sending Body');
+         Target.SendStreamRaw(PutData);
+         AThread.Log('Body Sent');
+       end;
+     finally
+       FreeAndNil(PutData);
+     end;
+    end else
+
+    if ((not IncomingRequest) and SameText(MessageType,'GET'))  or SameText(MessageType,'POST') then
+    begin
+     AThread.Log('Expecting Reply to GET/POST. Reading Bulk Data No-Length 10Sec wait');
+     PutData := TMemoryStream.Create;
+     try
+       Timer := now;
+       i := 25; // wait for first data for 10secs
+       repeat
+         try
+         Source.RecvStreamRaw(PutData,i);
+         except on e:ESynapseError do
+         begin
+           if (e.ErrorCode = 10054) then break;
+           if  (e.ErrorCode<> 10060) then
+           begin
+             AThread.Log('Error while reading bulk data '+inttostr(e.ErrorCode));
+             break;
+           end else
+           if PutData.Size > 0 then
+             break;
+         end;
+         else raise;
+
+         end;
+         AThread.Log('Reading More Extra Data in Bulk Load 25ms Polling');
+       until MilliSecondsBetween(now, timer) > 10000 ;
+       AThread.Log('Completed Unknown Block Size Read. About to Send Block '+IntToStr(PutData.Size)+' Bytes');
        PutData.Position := 0;
        Target.SendStreamRaw(PutData);
-       if bRecv then
-         HttpPacket.BodyRecv := StreamString else
-         HttpPacket.BodyReply := StreamString;
+       AThread.Log('Block Sent');
      finally
        FreeAndNil(PutData);
      end;
@@ -342,84 +361,43 @@ var
 
   end;
 begin
-  HttpPacket := THttpPacket.Create;
-  HttpPacket.TimeRecv := now;
-  FCS.Acquire;
   try
-    FPackets.Insert(0,HttpPacket);
-  finally
-    FCs.Release;
-  end;
-  try
-    try
-      // Set the Original Host to the name of the Target Http Site
-      // Typically this is intended as an IIS-Express LocalHost
-      // and the proxy is running on the same machine so that it can access
-      // the test server in LocalHost:Http and allow the rest of the network to
-      // access SSL on any port and host designation such as Lan IP
-      bRecv := True;
-      OriginalHost :=  'Host: '+Host+':'+IntToStr(Port);
-      OriginalOrigin :=  'Origin: http://'+Host+':'+IntToStr(Port);
-      Source := aThread.Sock;
-      Target := aThread.Data as TTCPBlockSocket;
-      ProcessSource;
+    // Set the Original Host to the name of the Target Http Site
+    // Typically this is intended as an IIS-Express LocalHost
+    // and the proxy is running on the same machine so that it can access
+    // the test server in LocalHost:Http and allow the rest of the network to
+    // access SSL on any port and host designation such as Lan IP
+    IncomingRequest := True;
+    OriginalHost := Host+':'+IntToStr(Port);
+    OriginalOrigin :=  'http://'+Host+':'+IntToStr(Port);
+    Source := aThread.Sock;
+    Target := aThread.Data as TTCPBlockSocket;
 
-      bRecv := False;
-      // Switch Source and target to return the traffic back to the requester.
-      Source := Target;
-      Target := aThread.Sock;
-      ProcessSource;
-     
-    except
-      on e:Exception do
-      begin
-        AddLog('Error:'+e.Message);
-        // All errrors must be raised to disconnect correctly.
-        // its normal and expected for a peer disconnect.
-        raise;
-      end;
-    end;
-  finally
-    FCs.Acquire;
-    try
-      if FPackets.Count > 50 then
-        FPackets.Delete(50);
-    finally
-      FCs.Release;
+    {
+    Target.RecvByte(1);
+    if not( (Target.LastError = 0) or  (Target.LastError = WSAETIMEDOUT)) then
+      raise exception.create('disconnected from main host');
+     }
+    ProcessSource;
+
+    IncomingRequest := False;
+    // Switch Source and target to return the traffic back to the requester.
+    Source := Target;
+    Target := aThread.Sock;
+    ProcessSource;
+  except
+    on e:Exception do
+    begin
+      AThread.Log(e.classname+ ' '+e.Message);
+      // All errrors must be raised to disconnect correctly.
+      // its normal and expected for a peer disconnect.
+      raise;
     end;
   end;
 end;
 
-{ THttpPacket }
-
-procedure THttpPacket.SetBodyRecv(const Value: string);
-begin
-  FBodyRecv := Value;
-end;
-
-procedure THttpPacket.SetBodyReply(const Value: string);
-begin
-  FBodyReply := Value;
-end;
-
-procedure THttpPacket.SetHeaderRecv(const Value: string);
-begin
-  FHeaderRecv := Value;
-end;
-
-procedure THttpPacket.SetHeaderReply(const Value: string);
-begin
-  FHeaderReply := Value;
-end;
-
-procedure THttpPacket.SetTimeRecv(const Value: TDateTime);
-begin
-  FTimeRecv := Value;
-end;
-
-procedure THttpPacket.SetTimeReply(const Value: TDateTime);
-begin
-  FTimeReply := Value;
-end;
-
+initialization
+  GlobalCS := TCriticalSection.Create;
+finalization
+  FreeAndNil(GlobalCS);
 end.

@@ -11,25 +11,18 @@ object ProxyMainForm: TProxyMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
-  object pcProxy: TPageControl
-    Left = 0
-    Top = 0
-    Width = 912
-    Height = 570
-    Align = alClient
-    TabOrder = 0
-    OnChange = pcProxyChange
-  end
   object Panel1: TPanel
-    Left = 912
+    Left = 872
     Top = 0
-    Width = 326
+    Width = 366
     Height = 570
     Align = alRight
-    TabOrder = 1
+    TabOrder = 0
     object Label1: TLabel
       Left = 24
       Top = 73
@@ -85,6 +78,50 @@ object ProxyMainForm: TProxyMainForm
       Action = actSave
       TabOrder = 5
     end
+    object pcProxy: TPageControl
+      Left = 1
+      Top = 240
+      Width = 364
+      Height = 329
+      Align = alBottom
+      TabOrder = 6
+      OnChange = pcProxyChange
+      ExplicitWidth = 556
+    end
+    object Button6: TButton
+      Left = 24
+      Top = 168
+      Width = 75
+      Height = 25
+      Caption = 'Clear Log'
+      TabOrder = 7
+      OnClick = Button6Click
+    end
+    object CheckBox1: TCheckBox
+      Left = 112
+      Top = 172
+      Width = 97
+      Height = 17
+      Caption = 'Pause'
+      TabOrder = 8
+    end
+  end
+  object Memo1: TMemo
+    Left = 0
+    Top = 0
+    Width = 872
+    Height = 570
+    Align = alClient
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Courier New'
+    Font.Style = []
+    ParentFont = False
+    ScrollBars = ssBoth
+    TabOrder = 1
+    WordWrap = False
+    ExplicitWidth = 680
   end
   object ActionList1: TActionList
     Left = 448
@@ -110,5 +147,11 @@ object ProxyMainForm: TProxyMainForm
       Caption = 'Save Config'
       OnExecute = actSaveExecute
     end
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 296
+    Top = 176
   end
 end

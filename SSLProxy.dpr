@@ -1,9 +1,17 @@
 program SSLProxy;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
   {$IFDEF FASTMM}
   FASTMM4 ,
   {$ENDIF}
+{$IFnDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   MainForm in 'MainForm.pas' {ProxyMainForm},
   SSLProxyConn in 'SSLProxyConn.pas',

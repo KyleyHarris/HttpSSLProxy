@@ -1,5 +1,9 @@
 unit uHssSetupFile;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses

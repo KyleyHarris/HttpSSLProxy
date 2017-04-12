@@ -1,9 +1,18 @@
 unit ProxyFrame;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+{$IFnDEF FPC}
+  Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages,
+{$ENDIF}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms,
   SSLProxyConn, StdCtrls, ExtCtrls, ActnList;
 
 type
@@ -13,19 +22,13 @@ type
     outgoingHost: TEdit;
     outgoingPort: TEdit;
     btnGo: TButton;
-    Memo1: TMemo;
-    Timer1: TTimer;
     Label1: TLabel;
     Label2: TLabel;
     Actions: TActionList;
     actGo: TAction;
-    ListBox1: TListBox;
-    Memo2: TMemo;
     cbRemoveCompression: TCheckBox;
-    procedure Timer1Timer(Sender: TObject);
     procedure actGoUpdate(Sender: TObject);
     procedure actGoExecute(Sender: TObject);
-    procedure ListBox1Click(Sender: TObject);
     procedure cbRemoveCompressionClick(Sender: TObject);
   private
     FProxy: TSSLProxyConn;
@@ -79,18 +82,6 @@ begin
   result := FProxy.Active;
 end;
 
-procedure TframeProxy.ListBox1Click(Sender: TObject);
-var
-  sHeaderIn, sHeaderOut, sBodyIn, sBodyOut:string;
-begin
-  if ListBox1.ItemIndex <> -1 then
-  begin
-    FProxy.Packet(ListBox1.ItemIndex,sHeaderIn, sHeaderOut, sBodyIn, sBodyOut);
-    Memo1.Lines.Text := sHeaderIn + CRLF + sBodyIn;
-    Memo2.Lines.Text := sHeaderOut + CRLF + sBodyOut;
-  end;
-end;
-
 procedure TframeProxy.SetActive(const Value: Boolean);
 begin
   if Value then
@@ -100,16 +91,6 @@ begin
     FProxy.Port := StrToInt(outgoingPort.Text);
   end;
   FProxy.Active := Value;
-end;
-
-procedure TframeProxy.Timer1Timer(Sender: TObject);
-var
-  i: Integer;
-begin
-  i := ListBox1.ItemIndex;
-  ListBox1.Items.Text := FProxy.Log;
-  ListBox1.ItemIndex := i;
-  ListBox1Click(ListBox1);
 end;
 
 end.
